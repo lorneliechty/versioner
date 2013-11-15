@@ -3,13 +3,29 @@ from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 
 def getCurrentVersion(path):
     if os.path.isdir(path):
-        return '1.0.0.0\n'
-    else:
-        return None
+        with file(path + '/version') as f:
+            return f.read()
+
+    return None
+
+def getNextVersion(path):
+    cv = getCurrentVersion(path)
+    cv_major, cv_minor, cv_patch, cv_build = cv.split('.')
+    cv_build = int(cv_build) + 1
+    nv = '.'.join([cv_major, cv_minor, cv_patch, str(cv_build)])
+
+    with file(path + '/version', 'w') as f:
+        f.write(nv)
+
+    return nv
 
 class Responder(BaseHTTPRequestHandler):
     def do_GET(self):
-        version = getCurrentVersion(os.curdir + self.path)
+        if self.path == '/':
+            self._respond('', status=404)
+            return
+
+        version = getNextVersion(os.curdir + self.path)
         if version:
             self._respond(version)
         else:
